@@ -16,7 +16,7 @@ describe('Executive Overview - Price Trend by Brand', () => {
     cy.url().should('eq', 'http://pepi-semen.inaai.ai:5173/')
   })
 
-  it('Memverifikasi filter Brand dan Line Chart pada Price Trend', () => {
+  it('Memverifikasi filter Brand dan Line Chart pada Price Trend (Happy Path)', () => {
     cy.contains('h3', 'Price Trend by Brand')
       .scrollIntoView()
       .should('be.visible')

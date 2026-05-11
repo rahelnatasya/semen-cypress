@@ -18,7 +18,7 @@ describe('Executive Overview - Market Share Brand', () => {
   })
 
   // --- SKENARIO UTAMA: Happy Path Memastikan UI Dropdown & Satuan ---
-  it('Memverifikasi perubahan satuan (ZAK dan %) berdasarkan dropdown filter', () => {
+  it('Memverifikasi perubahan satuan (ZAK dan %) berdasarkan dropdown filter (Happy Path)', () => {
     
     // SOLUSI: Kita berikan Mock Data agar Legend pasti muncul baik saat Volume maupun Visits!
     cy.intercept('GET', '**/api/v1/dashboard/market-share*', {

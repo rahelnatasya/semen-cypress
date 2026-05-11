@@ -17,7 +17,7 @@ describe('Territory Analytics - Filter Panel Default State', () => {
     cy.url().should('eq', 'http://pepi-semen.inaai.ai:5173/')
   })
 
-  it('Memverifikasi tampilan default filter pada Territory Analytics', () => {
+  it('Memverifikasi tampilan default filter pada Territory Analytics (Happy Path)', () => {
     
     cy.intercept('GET', '**/api/v1/master-data/demographic-analytics*').as('getAnalyticsData')
 

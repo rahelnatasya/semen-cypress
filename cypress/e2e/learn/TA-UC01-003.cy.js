@@ -25,7 +25,7 @@ describe('Territory Analytics - Area Data Visualization', () => {
   }
 
   // Skenario Utama mengikuti persis langkah 1 s/d 8 di Test Case
-  it('Memverifikasi seluruh filter Area Data Visualization aktif dan bisa di-toggle berurutan', () => {
+  it('Memverifikasi seluruh filter Area Data Visualization aktif dan bisa di-toggle berurutan (Happy Path)', () => {
     
     // Langkah 1 & 2: Buka Territory Analytics & Tunggu Loading
     cy.intercept('GET', '**/api/v1/master-data/demographic-analytics*').as('getData')

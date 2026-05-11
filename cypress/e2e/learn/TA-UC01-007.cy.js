@@ -1,4 +1,4 @@
-describe('TA-UC01-007 Territory Analytics - Geo Map District Rank Color', () => {
+describe('Territory Analytics - Geo Map District Rank Color', () => {
   
   beforeEach(() => {
     Cypress.on('uncaught:exception', (err) => {
@@ -14,7 +14,7 @@ describe('TA-UC01-007 Territory Analytics - Geo Map District Rank Color', () => 
     cy.url().should('eq', 'http://pepi-semen.inaai.ai:5173/')
   })
 
-  it('Verifikasi lingkaran angka Rank (A, B, C) pada Peta sesuai Legend', () => {
+  it('Verifikasi lingkaran angka Rank (A, B, C) pada Peta sesuai Legend (Happy Path)', () => {
     
     // 1. Tunggu data API dan Peta ter-render
     cy.intercept('GET', '**/api/v1/master-data/demographic-analytics*').as('getData')

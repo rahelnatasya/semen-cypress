@@ -22,7 +22,7 @@ describe('Territory Analytics - 3D Store Activity Level', () => {
       }
     })
   }
-  it('Verifikasi 3D Store Activity Level default Off dan Toggle Contour berfungsi', () => {
+  it('Verifikasi 3D Store Activity Level default Off dan Toggle Contour berfungsi (Happy Path)', () => {
     
     // 1. Setup Data & Tunggu Loading
     cy.intercept('GET', '**/api/v1/master-data/demographic-analytics*').as('getData')
