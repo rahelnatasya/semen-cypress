@@ -1,34 +1,34 @@
 const fs = require('fs');
 const path = require('path');
+const nodeXlsx = require('node-xlsx'); // Tambahkan ini di paling atas
 
 module.exports = {
   e2e: {
     setupNodeEvents(on, config) {
       on('task', {
         
-        // Task buatan kita sendiri murni menggunakan Node.js (Tanpa library glob)
+        // Task 1: Mencari file (sudah kita buat sebelumnya)
         findFiles({ folder, mask }) {
-          
-          // 1. Cek apakah folder 'downloads' sudah ada
-          // (Kadang Cypress belum membuat foldernya kalau belum ada yang didownload)
-          if (!fs.existsSync(folder)) {
-            return []; // Kembalikan kosong jika folder tidak ada
-          }
-
-          // 2. Baca seluruh nama file yang ada di dalam folder tersebut
+          if (!fs.existsSync(folder)) return [];
           const files = fs.readdirSync(folder);
-
-          // 3. Kita ubah pola '*.xlsx' menjadi sekadar '.xlsx'
           const extension = mask.replace('*', ''); 
+          return files.filter((file) => file.endsWith(extension));
+        },
 
-          // 4. Saring dan kembalikan hanya file yang berakhiran '.xlsx'
-          const matchedFiles = files.filter((file) => file.endsWith(extension));
-          
-          return matchedFiles;
+        // Task 2: MEMBACA ISI FILE EXCEL!
+        parseXlsx({ filePath }) {
+          return new Promise((resolve, reject) => {
+            try {
+              // Membaca file biner dan mengubahnya menjadi array data JSON
+              const excelData = nodeXlsx.parse(fs.readFileSync(filePath));
+              resolve(excelData);
+            } catch (error) {
+              reject(error);
+            }
+          });
         }
         
       })
     },
-    // ... konfigurasi lainnya tetap biarkan seperti semula
   },
 };
