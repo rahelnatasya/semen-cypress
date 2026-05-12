@@ -17,14 +17,14 @@ describe('VO-UC01-008 Strict Validation: Sinkronisasi UI dan File Excel', () => 
     cy.wait(1000)
 
     // Bersihkan folder download biar nggak rancu dengan file lama
-    cy.exec(`rm -rf ${downloadsFolder}/*`, { failOnNonZeroExit: false }) 
+    cy.task('clearFolder', { folderPath: downloadsFolder });
   })
 
   it('Validasi Ketat: Angka di layar UI harus PERSIS dengan angka di Excel', () => {
     
     cy.contains('button[role="tab"]', 'District', { matchCase: false }).click({ force: true })
     cy. wait(500)
-    
+
     cy.log('--- 1. FILTER TOKO SPESIFIK ---')
     cy.get(searchInput, { timeout: 10000 })
     .should('be.visible')
@@ -32,8 +32,7 @@ describe('VO-UC01-008 Strict Validation: Sinkronisasi UI dan File Excel', () => 
     .type('Sukolilo', { delay: 100, force: true })
 
     cy.log('--- 2. SCRAPING DATA DINAMIS DARI UI ---')
-    
-    // Cari baris K2 Jaya, lalu cari sel (td) terakhir yang merupakan kolom Total
+
     // Jika Total bukan di kolom terakhir, ganti .last() menjadi .eq(indeks_kolom) misalnya .eq(5)
     cy.contains('tr', 'Sukolilo')
       .find('td')
@@ -61,10 +60,6 @@ describe('VO-UC01-008 Strict Validation: Sinkronisasi UI dan File Excel', () => 
             const sheet = excelData[0].data; 
             const excelTargetRow = sheet.find(row => row.includes('Sukolilo'));
             const excelRowString = excelTargetRow.join(' ');
-
-            // ==========================================================
-            // 🏆 VALIDASI DINAMIS (ANTI-HARDCODE)
-            // ==========================================================
             
             // Cypress akan memasukkan angka berapapun yang dia temukan di UI ke dalam sini
             expect(excelRowString).to.include(
@@ -79,4 +74,92 @@ describe('VO-UC01-008 Strict Validation: Sinkronisasi UI dan File Excel', () => 
         });
       });
   })
-})
+  it('CASE 1: Validasi Export Hanya untuk Data yang Di-filter (K2 Jaya)', () => {
+    cy.get(searchInput).clear({ force: true }).type('K2 Jaya', { force: true });
+    cy.wait(1000);
+
+    cy.contains('button', /export|download/i).click({ force: true });
+    cy.wait(3000);
+
+    cy.task('findFiles', { folder: downloadsFolder, mask: '.xlsx' }).then((files) => {
+      const filePath = `${downloadsFolder}/${files[0]}`;
+      cy.task('parseXlsx', { filePath }).then((excelData) => {
+        const rows = excelData[0].data;
+        
+        // Validasi: Harus ada Header + 1 baris data K2 Jaya saja
+        expect(rows.length).to.be.at.most(2, '🚨 BUG: File Export berisi lebih dari 1 data, padahal sudah di-filter!');
+        expect(JSON.stringify(rows)).to.include('K2 Jaya');
+      });
+    });
+  });
+  it('CASE 2 & 3: Validasi Export Mode District dan Penamaan File Deskriptif', () => {
+    cy.contains('button[role="tab"]', 'District', { matchCase: false }).click({ force: true });
+    cy.wait(2000);
+
+    cy.contains('button', /export|download/i).click({ force: true });
+    cy.wait(3000);
+
+    cy.task('findFiles', { folder: downloadsFolder, mask: '.xlsx' }).then((files) => {
+      const fileName = files[0];
+      // Skenario 3: Nama file harus mengandung kata 'District'
+      expect(fileName.toLowerCase()).to.include('district', '🚨 BUG: Nama file tidak deskriptif (Missing "District" word)');
+
+      const filePath = `${downloadsFolder}/${fileName}`;
+      cy.task('parseXlsx', { filePath }).then((excelData) => {
+        const sheetContent = JSON.stringify(excelData[0].data);
+        // Skenario 2: Kolom harus berisi District/Kecamatan
+        expect(sheetContent).to.include('District');
+        expect(sheetContent).to.include('Sukolilo');
+      });
+    });
+  });
+  it('CASE 4: Validasi Perilaku Export Saat Data Tidak Ditemukan', () => {
+    cy.get(searchInput).clear({ force: true }).type('DataNgawur12345', { force: true });
+    cy.wait(1000);
+    cy.contains('Showing', { matchCase: false }).should('contain.text', '0-0');
+
+    cy.contains('button', /export|download/i).then(($btn) => {
+      if ($btn.is(':disabled')) {
+        cy.log('✅ Tombol Disabled saat data kosong.');
+      } else {
+        cy.wrap($btn).click({ force: true });
+        cy.wait(2000);
+        cy.task('findFiles', { folder: downloadsFolder, mask: '.xlsx' }).then((files) => {
+          const filePath = `${downloadsFolder}/${files[0]}`;
+          cy.task('parseXlsx', { filePath }).then((excelData) => {
+            // Hanya boleh ada 1 baris (Header saja)
+            expect(excelData[0].data.length).to.be.at.most(1);
+          });
+        });
+      }
+    });
+  });
+  it('CASE PAGINATION: Export Harus Mengambil Seluruh Data (Semua Halaman)', () => {
+    // 1. Ambil angka total data dari teks pagination di UI (misal: "of 102 stores")
+    cy.get('div').contains(/of\s*\d+\s*stores/i).invoke('text').then((text) => {
+      // Ambil angka menggunakan Regex (mencari angka setelah kata 'of')
+      const totalInUI = parseInt(text.match(/of\s*(\d+)/i)[1]);
+      cy.log(`🎯 Total data terdeteksi di UI: ${totalInUI}`);
+
+      // 2. Klik Export tanpa melakukan filter apa pun
+      cy.contains('button', /export|download/i).click({ force: true });
+      cy.wait(5000); // Beri waktu lebih lama karena data besar (102 baris)
+
+      // 3. Validasi isi Excel
+      cy.task('findFiles', { folder: downloadsFolder, mask: '.xlsx' }).then((files) => {
+        const filePath = `${downloadsFolder}/${files[0]}`;
+        cy.task('parseXlsx', { filePath }).then((excelData) => {
+          const rowCountInExcel = excelData[0].data.length - 1; // Kurangi 1 untuk Header
+          
+          cy.log(`📄 Total baris data di Excel: ${rowCountInExcel}`);
+
+          // ASERSi UTAMA: Jumlah data di Excel harus SAMA dengan total data di UI
+          // Jika Excel cuma berisi 25 baris padahal di UI ada 102, berarti BUG PAGINATION!
+          expect(rowCountInExcel).to.eq(totalInUI, 
+            `🚨 BUG EXPORT: File Excel hanya mengunduh halaman pertama (${rowCountInExcel} baris), seharusnya ${totalInUI} baris!`
+          );
+        });
+      });
+    });
+  });
+});
