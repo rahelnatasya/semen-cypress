@@ -5,6 +5,11 @@ pipeline {
     TF_IN_AUTOMATION = 'true'
     TF_INPUT = '0'
 
+    // Workaround for Docker Desktop/Windows mounts that may be 'noexec'
+    // so Terraform provider binaries can be executed.
+    TF_DATA_DIR = "/tmp/tfdata-${BUILD_NUMBER}"
+    TF_PLUGIN_CACHE_DIR = "/tmp/tfplugin-cache"
+
     // Target app under test
     TF_VAR_base_url = 'http://pepi-semen.inaai.ai:5173'
 
