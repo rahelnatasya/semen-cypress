@@ -63,7 +63,75 @@ locals {
     mkdir -p /e2e
     cd /e2e
 
-    curl -fsSL "$REPO_ARCHIVE_URL" | tar -xz --strip-components=1
+    node <<'NODE'
+    const fs = require('fs');
+    const { URL } = require('url');
+    const https = require('https');
+    const http = require('http');
+
+    function downloadToFile(urlStr, destPath, redirects) {
+      const maxRedirects = 10;
+      const redirectCount = redirects || 0;
+      if (redirectCount > maxRedirects) {
+        return Promise.reject(new Error('Too many redirects'));
+      }
+
+      const urlObj = new URL(urlStr);
+      const lib = urlObj.protocol === 'https:' ? https : http;
+
+      return new Promise((resolve, reject) => {
+        const req = lib.get(
+          urlObj,
+          { headers: { 'User-Agent': 'node' } },
+          (res) => {
+            const code = res.statusCode || 0;
+            const isRedirect = [301, 302, 303, 307, 308].indexOf(code) !== -1;
+
+            if (isRedirect && res.headers.location) {
+              const nextUrl = new URL(res.headers.location, urlObj).toString();
+              res.resume();
+              resolve(downloadToFile(nextUrl, destPath, redirectCount + 1));
+              return;
+            }
+
+            if (code !== 200) {
+              res.resume();
+              reject(new Error('Failed to download archive. HTTP ' + code));
+              return;
+            }
+
+            const file = fs.createWriteStream(destPath);
+            res.pipe(file);
+            file.on('finish', () => file.close(resolve));
+            file.on('error', (err) => {
+              try { fs.unlinkSync(destPath); } catch (_) {}
+              reject(err);
+            });
+          }
+        );
+
+        req.on('error', reject);
+      });
+    }
+
+    (async () => {
+      const urlStr = process.env.REPO_ARCHIVE_URL;
+      if (!urlStr) {
+        console.error('REPO_ARCHIVE_URL is empty');
+        process.exit(2);
+      }
+
+      const dest = '/tmp/repo.tgz';
+      await downloadToFile(urlStr, dest, 0);
+      console.log('Downloaded archive to ' + dest);
+    })().catch((err) => {
+      console.error(err && err.stack ? err.stack : String(err));
+      process.exit(2);
+    });
+NODE
+
+    tar -xzf /tmp/repo.tgz --strip-components=1
+    rm -f /tmp/repo.tgz
 
     echo "Installing npm deps..."
     npm ci
