@@ -142,7 +142,7 @@ NODE
     fi
 
     echo "Running Cypress against baseUrl=$CYPRESS_baseUrl"
-    npx cypress run --config baseUrl="$CYPRESS_baseUrl" $SPEC_ARG
+    npx cypress run --posix-exit-codes --config baseUrl="$CYPRESS_baseUrl" $SPEC_ARG
   BASH
 }
 
@@ -152,13 +152,15 @@ resource "docker_container" "cypress_runner" {
 
   must_run = false
   attach   = true
-  logs     = true
+  logs     = false
 
   entrypoint = ["bash", "-lc"]
   command    = [local.runner_script]
 
   env = [
     "CI=1",
+    "NO_COLOR=1",
+    "FORCE_COLOR=0",
     "CYPRESS_baseUrl=${var.base_url}",
     "REPO_ARCHIVE_URL=${var.repo_archive_url}",
     "CYPRESS_SPEC=${var.spec}",
