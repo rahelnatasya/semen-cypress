@@ -70,30 +70,11 @@ pipeline {
             def pollCount = 0
             timeout(time: 80, unit: 'MINUTES') {
               while (finalExitCode == null) {
-                sh 'terraform apply -refresh-only -auto-approve -var="run_id=${BUILD_NUMBER}" >/dev/null'
+                // Refresh only the container resource while polling (faster + avoids reading log data sources).
+                sh 'terraform apply -refresh-only -auto-approve -var="run_id=${BUILD_NUMBER}" -target=docker_container.cypress_runner >/dev/null'
                 def ec = sh(script: 'terraform output -raw runner_exit_code 2>/dev/null || true', returnStdout: true).trim()
                 if (ec?.isInteger()) {
                   finalExitCode = ec
-                } else {
-                  // Fallback: parse marker from logs without regex (keeps pipeline CPS-serializable).
-                  def logs = sh(script: 'terraform output -raw runner_logs_tail 2>/dev/null | tail -c 2000 || true', returnStdout: true)
-                  def marker = 'CYPRESS_EXIT_CODE='
-                  def idx = logs.lastIndexOf(marker)
-                  if (idx >= 0) {
-                    def after = logs.substring(idx + marker.length())
-                    def digits = ''
-                    for (int i = 0; i < after.length(); i++) {
-                      def ch = after.charAt(i)
-                      if (ch >= '0' && ch <= '9') {
-                        digits = digits + ch
-                      } else {
-                        break
-                      }
-                    }
-                    if (digits) {
-                      finalExitCode = digits
-                    }
-                  }
                 }
 
                 pollCount = pollCount + 1
@@ -128,7 +109,8 @@ pipeline {
     always {
       dir('terraform') {
         // Ensure we clean up the runner container even if Cypress fails
-        sh 'terraform destroy -auto-approve -var="run_id=${BUILD_NUMBER}" || true'
+        // Avoid refreshing data sources during cleanup (more robust if a provider has log-related bugs).
+        sh 'terraform destroy -auto-approve -refresh=false -var="run_id=${BUILD_NUMBER}" || true'
       }
     }
   }

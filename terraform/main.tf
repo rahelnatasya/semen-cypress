@@ -187,7 +187,6 @@ data "docker_logs" "cypress_runner" {
   show_stdout = true
   show_stderr = true
 
-  discard_headers          = true
   logs_list_string_enabled = true
 
   # Limit the amount of data Terraform reads on each refresh.
