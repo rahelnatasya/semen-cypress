@@ -148,7 +148,12 @@ NODE
     fi
 
     echo "Running Cypress against baseUrl=$CYPRESS_baseUrl"
+    set +e
     npx cypress run --posix-exit-codes --config baseUrl="$CYPRESS_baseUrl" $SPEC_ARG
+    CYPRESS_RC=$?
+    set -e
+    echo "CYPRESS_EXIT_CODE=${CYPRESS_RC}"
+    exit ${CYPRESS_RC}
   BASH
 }
 
@@ -160,11 +165,6 @@ resource "docker_container" "cypress_runner" {
   logs     = true
 
   tty = true
-
-  # Cypress run can take a while (npm ci + E2E). Wait for completion and
-  # allow enough time so Terraform doesn't cancel the provider request.
-  wait         = true
-  wait_timeout = 5400
 
   entrypoint = ["bash", "-lc"]
   command    = [local.runner_script]

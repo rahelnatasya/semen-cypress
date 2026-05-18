@@ -57,23 +57,50 @@ pipeline {
         dir('terraform') {
           script {
             def applyRc = sh(script: 'terraform apply -auto-approve -var="run_id=${BUILD_NUMBER}"', returnStatus: true)
-
-            // Always print runner logs (tail) so failures are debuggable in Jenkins.
-            sh 'echo "\n===== CYPRESS LOGS (tail) ====="'
-            sh 'terraform output -raw runner_logs_tail || true'
-            sh 'echo "\n===== CYPRESS EXIT CODE ====="'
-            def exitCode = sh(script: 'terraform output -raw runner_exit_code || echo 999', returnStdout: true).trim()
-            sh "echo ${exitCode}"
-
             if (applyRc != 0) {
-              // Fallback: if Terraform failed before state/outputs were written,
-              // try to read container logs directly (if docker CLI is available).
               sh 'echo "\n===== FALLBACK DOCKER LOGS (tail) ====="'
               sh 'if command -v docker >/dev/null 2>&1; then docker logs "cypress-runner-${BUILD_NUMBER}" 2>&1 | tail -c 60000 || true; else echo "docker CLI not available in this Jenkins agent"; fi'
               error("terraform apply failed (rc=${applyRc}).")
             }
-            if (exitCode != '0') {
-              error("Cypress failed (exit_code=${exitCode}).")
+
+            // Poll Docker state via Terraform refresh until Cypress finishes.
+            // (docker CLI may not exist in the Jenkins agent, so we use the provider.)
+            def finalExitCode = null
+            timeout(time: 80, unit: 'MINUTES') {
+              while (finalExitCode == null) {
+                sh 'terraform apply -refresh-only -auto-approve -var="run_id=${BUILD_NUMBER}" >/dev/null'
+                def ec = sh(script: 'terraform output -raw runner_exit_code 2>/dev/null || true', returnStdout: true).trim()
+                def logs = sh(script: 'terraform output -raw runner_logs_tail 2>/dev/null || true', returnStdout: true)
+
+                // Prefer exit_code if provider can read it; otherwise parse the log marker.
+                if (ec && ec != '0') {
+                  finalExitCode = ec
+                } else if (ec == '0' && logs.contains('CYPRESS_EXIT_CODE=')) {
+                  // Cypress finished successfully and printed the marker.
+                  finalExitCode = '0'
+                } else {
+                  def m = (logs =~ /CYPRESS_EXIT_CODE=(\d+)/)
+                  if (m.find()) {
+                    finalExitCode = m.group(1)
+                  }
+                }
+
+                if (finalExitCode == null) {
+                  sleep(time: 15, unit: 'SECONDS')
+                }
+              }
+            }
+
+            // Final refresh so printed logs include the last lines.
+            sh 'terraform apply -refresh-only -auto-approve -var="run_id=${BUILD_NUMBER}" >/dev/null'
+
+            sh 'echo "\n===== CYPRESS LOGS (tail) ====="'
+            sh 'terraform output -raw runner_logs_tail || true'
+            sh 'echo "\n===== CYPRESS EXIT CODE ====="'
+            sh "echo ${finalExitCode}"
+
+            if (finalExitCode != '0') {
+              error("Cypress failed (exit_code=${finalExitCode}).")
             }
           }
         }
