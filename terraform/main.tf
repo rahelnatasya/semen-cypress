@@ -161,7 +161,8 @@ resource "docker_container" "cypress_runner" {
   image = docker_image.runner.image_id
 
   must_run = false
-  logs     = true
+  attach   = false
+  logs     = false
 
   tty = true
 
@@ -180,6 +181,22 @@ resource "docker_container" "cypress_runner" {
   shm_size = 1024
 }
 
+data "docker_logs" "cypress_runner" {
+  name = docker_container.cypress_runner.name
+
+  show_stdout = true
+  show_stderr = true
+
+  discard_headers          = true
+  logs_list_string_enabled = true
+
+  # Limit the amount of data Terraform reads on each refresh.
+  # This mirrors `docker logs --tail`.
+  tail = "2000"
+
+  depends_on = [docker_container.cypress_runner]
+}
+
 output "runner_container_name" {
   value = docker_container.cypress_runner.name
 }
@@ -189,7 +206,10 @@ output "runner_exit_code" {
 }
 
 locals {
-  runner_logs = try(docker_container.cypress_runner.container_logs, "")
+  runner_logs_from_data = try(join("\n", data.docker_logs.cypress_runner.logs_list_string), "")
+  runner_logs_from_attr = try(docker_container.cypress_runner.container_logs, "")
+
+  runner_logs = length(local.runner_logs_from_data) > 0 ? local.runner_logs_from_data : local.runner_logs_from_attr
 
   runner_logs_tail = try(
     length(local.runner_logs) > var.log_tail_chars ? substr(
