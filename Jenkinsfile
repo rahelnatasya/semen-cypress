@@ -3,6 +3,7 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
+    timeout(time: 90, unit: 'MINUTES')
   }
 
   environment {
@@ -65,6 +66,10 @@ pipeline {
             sh "echo ${exitCode}"
 
             if (applyRc != 0) {
+              // Fallback: if Terraform failed before state/outputs were written,
+              // try to read container logs directly (if docker CLI is available).
+              sh 'echo "\n===== FALLBACK DOCKER LOGS (tail) ====="'
+              sh 'if command -v docker >/dev/null 2>&1; then docker logs "cypress-runner-${BUILD_NUMBER}" 2>&1 | tail -c 60000 || true; else echo "docker CLI not available in this Jenkins agent"; fi'
               error("terraform apply failed (rc=${applyRc}).")
             }
             if (exitCode != '0') {

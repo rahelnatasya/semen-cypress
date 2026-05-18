@@ -157,10 +157,14 @@ resource "docker_container" "cypress_runner" {
   image = docker_image.runner.image_id
 
   must_run = false
-  attach   = true
   logs     = true
 
   tty = true
+
+  # Cypress run can take a while (npm ci + E2E). Wait for completion and
+  # allow enough time so Terraform doesn't cancel the provider request.
+  wait         = true
+  wait_timeout = 5400
 
   entrypoint = ["bash", "-lc"]
   command    = [local.runner_script]
