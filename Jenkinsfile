@@ -1,6 +1,10 @@
 pipeline {
   agent any
 
+  options {
+    skipDefaultCheckout(true)
+  }
+
   environment {
     TF_IN_AUTOMATION = 'true'
     TF_INPUT = '0'
@@ -46,7 +50,23 @@ pipeline {
     stage('Run Cypress (Terraform -> Docker)') {
       steps {
         dir('terraform') {
-          sh 'terraform apply -auto-approve -var="run_id=${BUILD_NUMBER}"'
+          script {
+            def applyRc = sh(script: 'terraform apply -auto-approve -var="run_id=${BUILD_NUMBER}"', returnStatus: true)
+
+            // Always print runner logs (tail) so failures are debuggable in Jenkins.
+            sh 'echo "\n===== CYPRESS LOGS (tail) ====="'
+            sh 'terraform output -raw runner_logs_tail || true'
+            sh 'echo "\n===== CYPRESS EXIT CODE ====="'
+            def exitCode = sh(script: 'terraform output -raw runner_exit_code || echo 999', returnStdout: true).trim()
+            sh "echo ${exitCode}"
+
+            if (applyRc != 0) {
+              error("terraform apply failed (rc=${applyRc}).")
+            }
+            if (exitCode != '0') {
+              error("Cypress failed (exit_code=${exitCode}).")
+            }
+          }
         }
       }
     }

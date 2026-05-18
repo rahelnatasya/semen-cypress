@@ -160,6 +160,8 @@ resource "docker_container" "cypress_runner" {
   attach   = true
   logs     = true
 
+  tty = true
+
   entrypoint = ["bash", "-lc"]
   command    = [local.runner_script]
 
