@@ -71,10 +71,29 @@ pipeline {
             timeout(time: 80, unit: 'MINUTES') {
               while (finalExitCode == null) {
                 sh 'terraform apply -refresh-only -auto-approve -var="run_id=${BUILD_NUMBER}" >/dev/null'
-                def logs = sh(script: 'terraform output -raw runner_logs_tail 2>/dev/null || true', returnStdout: true)
-                def m = (logs =~ /CYPRESS_EXIT_CODE=(\d+)/)
-                if (m.find()) {
-                  finalExitCode = m.group(1)
+                def ec = sh(script: 'terraform output -raw runner_exit_code 2>/dev/null || true', returnStdout: true).trim()
+                if (ec?.isInteger()) {
+                  finalExitCode = ec
+                } else {
+                  // Fallback: parse marker from logs without regex (keeps pipeline CPS-serializable).
+                  def logs = sh(script: 'terraform output -raw runner_logs_tail 2>/dev/null | tail -c 2000 || true', returnStdout: true)
+                  def marker = 'CYPRESS_EXIT_CODE='
+                  def idx = logs.lastIndexOf(marker)
+                  if (idx >= 0) {
+                    def after = logs.substring(idx + marker.length())
+                    def digits = ''
+                    for (int i = 0; i < after.length(); i++) {
+                      def ch = after.charAt(i)
+                      if (ch >= '0' && ch <= '9') {
+                        digits = digits + ch
+                      } else {
+                        break
+                      }
+                    }
+                    if (digits) {
+                      finalExitCode = digits
+                    }
+                  }
                 }
 
                 pollCount = pollCount + 1
