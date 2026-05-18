@@ -46,7 +46,7 @@ variable "spec" {
 variable "log_tail_chars" {
   description = "How many characters of Cypress container logs to print to CI output."
   type        = number
-  default     = 8000
+  default     = 60000
 }
 
 provider "docker" {

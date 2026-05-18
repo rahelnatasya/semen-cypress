@@ -27,7 +27,11 @@ pipeline {
     TF_VAR_repo_archive_url = 'https://github.com/rahelnatasya/semen-cypress/archive/refs/heads/main.tar.gz'
 
     // Optional: set to a specific spec, or keep empty to run all specs
-    TF_VAR_spec = ''
+    // CI default: run project specs only (exclude Cypress example specs)
+    TF_VAR_spec = 'cypress/e2e/learn/**/*.cy.js'
+
+    // Print more log context to Jenkins (helps see failing assertions)
+    TF_VAR_log_tail_chars = '60000'
   }
 
   stages {

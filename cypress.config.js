@@ -40,6 +40,11 @@ module.exports = {
 
       })
     },
+    // Stabilkan eksekusi di CI (headless biasanya lebih lambat daripada lokal)
+    defaultCommandTimeout: 10000,
+    pageLoadTimeout: 120000,
+    requestTimeout: 10000,
+    responseTimeout: 60000,
     // Jika kamu punya konfigurasi lain seperti baseUrl, viewport, dll, taruh di bawah sini
   },
 };
