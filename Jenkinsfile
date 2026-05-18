@@ -71,11 +71,10 @@ pipeline {
             timeout(time: 80, unit: 'MINUTES') {
               while (finalExitCode == null) {
                 sh 'terraform apply -refresh-only -auto-approve -var="run_id=${BUILD_NUMBER}" >/dev/null'
-                def ec = sh(script: 'terraform output -raw runner_exit_code 2>/dev/null || true', returnStdout: true).trim()
-
-                // When the container is still running, runner_exit_code is usually empty.
-                if (ec ==~ /\d+/) {
-                  finalExitCode = ec
+                def logs = sh(script: 'terraform output -raw runner_logs_tail 2>/dev/null || true', returnStdout: true)
+                def m = (logs =~ /CYPRESS_EXIT_CODE=(\d+)/)
+                if (m.find()) {
+                  finalExitCode = m.group(1)
                 }
 
                 pollCount = pollCount + 1

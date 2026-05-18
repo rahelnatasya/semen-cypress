@@ -64,6 +64,10 @@ locals {
   runner_script = <<-BASH
     set -eo pipefail
 
+    # Always print a completion marker with the final exit code,
+    # even if the script fails early (download/npm/cypress, etc.).
+    trap 'rc=$?; echo "CYPRESS_EXIT_CODE=$rc"' EXIT
+
     echo "Downloading test repo: $REPO_ARCHIVE_URL"
     rm -rf /e2e
     mkdir -p /e2e
@@ -148,12 +152,7 @@ NODE
     fi
 
     echo "Running Cypress against baseUrl=$CYPRESS_baseUrl"
-    set +e
     npx cypress run --posix-exit-codes --config baseUrl="$CYPRESS_baseUrl" $SPEC_ARG
-    CYPRESS_RC=$?
-    set -e
-    echo "CYPRESS_EXIT_CODE=$CYPRESS_RC"
-    exit $CYPRESS_RC
   BASH
 }
 
@@ -190,13 +189,16 @@ output "runner_exit_code" {
 }
 
 locals {
-  runner_logs = coalesce(try(docker_container.cypress_runner.container_logs, null), "")
+  runner_logs = try(docker_container.cypress_runner.container_logs, "")
 
-  runner_logs_tail = length(local.runner_logs) > var.log_tail_chars ? substr(
-    local.runner_logs,
-    length(local.runner_logs) - var.log_tail_chars,
-    var.log_tail_chars
-  ) : local.runner_logs
+  runner_logs_tail = try(
+    length(local.runner_logs) > var.log_tail_chars ? substr(
+      local.runner_logs,
+      length(local.runner_logs) - var.log_tail_chars,
+      var.log_tail_chars
+    ) : local.runner_logs,
+    ""
+  )
 }
 
 output "runner_logs_tail" {
