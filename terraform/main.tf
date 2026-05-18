@@ -186,11 +186,11 @@ output "runner_container_name" {
 }
 
 output "runner_exit_code" {
-  value = docker_container.cypress_runner.exit_code
+  value = try(tostring(docker_container.cypress_runner.exit_code), "")
 }
 
 locals {
-  runner_logs = try(docker_container.cypress_runner.container_logs, "")
+  runner_logs = coalesce(try(docker_container.cypress_runner.container_logs, null), "")
 
   runner_logs_tail = length(local.runner_logs) > var.log_tail_chars ? substr(
     local.runner_logs,

@@ -67,23 +67,20 @@ pipeline {
             // Poll Docker state via Terraform refresh until Cypress finishes.
             // (docker CLI may not exist in the Jenkins agent, so we use the provider.)
             def finalExitCode = null
+            def pollCount = 0
             timeout(time: 80, unit: 'MINUTES') {
               while (finalExitCode == null) {
                 sh 'terraform apply -refresh-only -auto-approve -var="run_id=${BUILD_NUMBER}" >/dev/null'
                 def ec = sh(script: 'terraform output -raw runner_exit_code 2>/dev/null || true', returnStdout: true).trim()
-                def logs = sh(script: 'terraform output -raw runner_logs_tail 2>/dev/null || true', returnStdout: true)
 
-                // Prefer exit_code if provider can read it; otherwise parse the log marker.
-                if (ec && ec != '0') {
+                // When the container is still running, runner_exit_code is usually empty.
+                if (ec ==~ /\d+/) {
                   finalExitCode = ec
-                } else if (ec == '0' && logs.contains('CYPRESS_EXIT_CODE=')) {
-                  // Cypress finished successfully and printed the marker.
-                  finalExitCode = '0'
-                } else {
-                  def m = (logs =~ /CYPRESS_EXIT_CODE=(\d+)/)
-                  if (m.find()) {
-                    finalExitCode = m.group(1)
-                  }
+                }
+
+                pollCount = pollCount + 1
+                if (finalExitCode == null && (pollCount % 8) == 0) {
+                  sh 'echo "Waiting for Cypress to finish..."'
                 }
 
                 if (finalExitCode == null) {
