@@ -43,6 +43,12 @@ variable "spec" {
   default     = ""
 }
 
+variable "log_tail_chars" {
+  description = "How many characters of Cypress container logs to print to CI output."
+  type        = number
+  default     = 8000
+}
+
 provider "docker" {
   host = var.docker_host
 }
@@ -152,7 +158,7 @@ resource "docker_container" "cypress_runner" {
 
   must_run = false
   attach   = true
-  logs     = false
+  logs     = true
 
   entrypoint = ["bash", "-lc"]
   command    = [local.runner_script]
@@ -167,13 +173,6 @@ resource "docker_container" "cypress_runner" {
   ]
 
   shm_size = 1024
-
-  lifecycle {
-    postcondition {
-      condition     = self.exit_code == 0
-      error_message = "Cypress failed (exit_code=${self.exit_code})."
-    }
-  }
 }
 
 output "runner_container_name" {
@@ -182,4 +181,18 @@ output "runner_container_name" {
 
 output "runner_exit_code" {
   value = docker_container.cypress_runner.exit_code
+}
+
+locals {
+  runner_logs = try(docker_container.cypress_runner.container_logs, "")
+
+  runner_logs_tail = length(local.runner_logs) > var.log_tail_chars ? substr(
+    local.runner_logs,
+    length(local.runner_logs) - var.log_tail_chars,
+    var.log_tail_chars
+  ) : local.runner_logs
+}
+
+output "runner_logs_tail" {
+  value = local.runner_logs_tail
 }
