@@ -48,6 +48,7 @@ pipeline {
           sh 'mkdir -p "$TF_DATA_DIR" "$TF_PLUGIN_CACHE_DIR"'
           sh 'terraform --version'
           sh 'terraform init -upgrade'
+          sh 'terraform validate'
         }
       }
     }

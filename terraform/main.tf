@@ -152,8 +152,8 @@ NODE
     npx cypress run --posix-exit-codes --config baseUrl="$CYPRESS_baseUrl" $SPEC_ARG
     CYPRESS_RC=$?
     set -e
-    echo "CYPRESS_EXIT_CODE=${CYPRESS_RC}"
-    exit ${CYPRESS_RC}
+    echo "CYPRESS_EXIT_CODE=$CYPRESS_RC"
+    exit $CYPRESS_RC
   BASH
 }
 
