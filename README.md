@@ -1,22 +1,37 @@
-readme_content = """# Automation Test with Cypress on Dashboard Management Project
+# 🧪 Cypress E2E Testing - Dashboard Management
 
-Proyek ini berisi rangkaian pengujian otomatis end-to-end (E2E) menggunakan **Cypress** untuk memastikan fungsionalitas, keamanan, dan keandalan dari sistem **Dashboard Management**. 
+## 📖 Tentang Proyek
+Proyek ini berisi rangkaian pengujian otomatis (*Automation Testing*) untuk sistem **Dashboard Management**. Pengujian difokuskan pada manajemen inventaris, integrasi RFID, dan fitur *Role-Based Access Control* (SuperAdmin, Warehouse Admin, Store Admin).
 
-Sistem yang diuji mencakup manajemen inventaris gudang (*warehouse*) dan toko (*store*) yang terintegrasi dengan teknologi **RFID**, serta dilengkapi dengan fitur **Role-Based Access Control (RBAC)** untuk peran *SuperAdmin*, *Warehouse Admin*, dan *Store Admin*.
+## 🎯 Tujuan Cypress & E2E Testing
+Pengujian ini menggunakan pendekatan **End-to-End (E2E) Testing** dengan **Cypress**. Tujuannya adalah menyimulasikan interaksi pengguna asli secara nyata (seperti login, klik tombol, navigasi halaman, dan unduh laporan). Dengan E2E *testing*, kita memastikan seluruh alur sistem berfungsi sempurna dari ujung ke ujung sebelum aplikasi benar-benar digunakan.
 
----
+## ⚙️ Persyaratan Sistem (Dependencies)
+Sebelum menjalankan proyek ini, pastikan sistem kamu sudah terinstal:
+1. **Node.js** (Rekomendasi: versi LTS).
+2. **npm** (Otomatis terinstal bersama Node.js) atau **yarn**.
+3. **Git Bash** atau terminal lain di Windows.
 
-## 🚀 Fitur Utama Pengujian
+## 🚀 Cara Instalasi
+1. *Clone* repositori ini ke dalam lokal komputermu:
+   ```bash
+   git clone [https://github.com/rahelnatasya/semen-cypress.git](https://github.com/rahelnatasya/semen-cypress.git)
+   cd semen-cypress
+2. Instal semua dependencies yang dibutuhkan: **npm install**
 
-Rangkaian *automation test* ini dirancang untuk memvalidasi beberapa alur kerja krusial, antara lain:
-- **Autentikasi & Otorisasi (RBAC):** Memastikan hak akses halaman dan tindakan sesuai dengan role pengguna (*SuperAdmin*, *Warehouse Admin*, dan *Store Admin*).
-- **Manajemen Inventaris Gudang & Toko:** Pengujian alur *rebalancing* stok, pelacakan barang, dan sinkronisasi data.
-- **Simulasi Integrasi RFID:** Pengujian otomatisasi input data berbasis RFID untuk akurasi pelacakan inventaris.
-- **Pengujian Laporan & Unduhan:** Validasi akurasi ekspor data dalam format dokumen (seperti file laporan excel `.xlsx`) yang diunduh langsung melalui sistem.
-- **Data-Driven Testing:** Memanfaatkan file *fixtures* (baik JSON maupun Excel seperti `data-tiro.xlsx`) untuk menguji berbagai variasi input secara dinamis.
+## Cara Menjalankan di Windows
+1. Mode Interaktif (GUI Browser):
+   **npx cypress open**
+   Langkah Selanjutnya:
+   Jendela Cypress akan terbuka.
+   Pilih menu E2E Testing.
+   Pilih browser (misalnya Chrome atau Edge), lalu klik Start E2E Testing.
+   Klik salah satu file skrip .cy.js untuk mulai menjalankan pengujian.
+2. Mode Headless (CLI / Background)
+   **npx cypress run**
 
----
+## 📂 Struktur Utama Proyek
+1. **cypress/e2e/**: Folder utama tempat menyimpan seluruh skrip testing Cypress (.cy.js).
+2. **cypress/fixtures/**: Tempat menyimpan data statis (contoh: file .xlsx atau .json)    yang disuntikkan ke dalam test.
+3. **cypress/downloads/**: Folder tempat menampung file laporan yang berhasil diunduh selama proses automation testing.
 
-## 📂 Struktur Folder Proyek
-
-Struktur direktori pengujian Cypress diatur sebagai berikut untuk memudahkan pengelolaan *test case*:
