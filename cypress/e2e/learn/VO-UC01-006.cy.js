@@ -226,6 +226,6 @@ describe('Visit Overview - Search Bar Validation', () => {
 })
 
 
-//[BUG] Search Bara tidak mengabaikan spasi kosong, ketika pengguna tidak sengaja mengetik spasi kosong di kolom pencarian, sistem 
+//[BUG] Search Bar tidak mengabaikan spasi kosong, ketika pengguna tidak sengaja mengetik spasi kosong di kolom pencarian, sistem 
 //memproses sebagai karakter yang valid, sehingga menghasilkan tabel dengan nilai kosong. 
 
