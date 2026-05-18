@@ -1,7 +1,7 @@
 # 🧪 Cypress E2E Testing - Dashboard Management
 
 ## 📖 Tentang Proyek
-Proyek ini berisi rangkaian pengujian otomatis (*Automation Testing*) untuk sistem **Dashboard Management**. Pengujian difokuskan pada manajemen inventaris, integrasi RFID, dan fitur *Role-Based Access Control* (SuperAdmin, Warehouse Admin, Store Admin).
+Proyek ini berisi rangkaian pengujian otomatis (*Automation Testing*) untuk sistem **Dashboard Management**. 
 
 ## 🎯 Tujuan Cypress & E2E Testing
 Pengujian ini menggunakan pendekatan **End-to-End (E2E) Testing** dengan **Cypress**. Tujuannya adalah menyimulasikan interaksi pengguna asli secara nyata (seperti login, klik tombol, navigasi halaman, dan unduh laporan). Dengan E2E *testing*, kita memastikan seluruh alur sistem berfungsi sempurna dari ujung ke ujung sebelum aplikasi benar-benar digunakan.
